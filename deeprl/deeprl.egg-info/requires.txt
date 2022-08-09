@@ -1,0 +1,7 @@
+gym
+matplotlib
+numpy
+pybullet
+pandas
+pyyaml
+termcolor

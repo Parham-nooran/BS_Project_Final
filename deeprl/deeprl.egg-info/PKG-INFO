@@ -1,0 +1,14 @@
+Metadata-Version: 2.1
+Name: deeprl
+Version: 0.0.1
+Summary: Deep Reinforcement Learning Algorithms Implementation
+Home-page: https://github.com/
+Author: Parham Nooranbakht
+Author-email: parhamnooranbakht@email.kntu.ac.ir
+License: MIT
+Keywords: deep reinforcement learning,reinforcement learning,deep learning
+Platform: UNKNOWN
+Requires-Python: >=3.6
+
+UNKNOWN
+
