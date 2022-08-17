@@ -40,7 +40,6 @@ class MeanStd(tf.keras.Model):
             self.new_sum_sq += np.square(val)
             self.new_count += 1
 
-    # Careful: do not use in @tf.function
     def update(self):
         new_count = self.count + self.new_count
         new_mean = self.new_sum / self.new_count

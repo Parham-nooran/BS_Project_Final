@@ -7,7 +7,7 @@ from deeprl.tensorflow import updaters
 
 FLOAT_EPSILON = 1e-8
 
-
+# A2C
 class StochasticPolicyGradient:
     def __init__(self, optimizer=None, entropy_coeff=0, gradient_clip=0):
         self.optimizer = optimizer or \
@@ -113,7 +113,6 @@ class TrustRegionPolicyGradient:
         self.model = model
         self.variables = self.model.actor.trainable_variables
 
-    # Careful: do not use in @tf.function
     def __call__(
         self, observations, actions, log_probs, locs, scales, advantages
     ):

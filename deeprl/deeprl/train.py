@@ -1,5 +1,3 @@
-'''Script used to train agents.'''
-
 import argparse
 import os
 
@@ -7,12 +5,9 @@ import deeprl
 import yaml
 
 
-def train(
-    header, agent, environment, test_environment, trainer, before_training,
+def train(header, agent, environment, test_environment, trainer, before_training,
     after_training, parallel, sequential, seed, name, environment_name,
-    checkpoint, path
-):
-    '''Trains an agent on an environment.'''
+    checkpoint, path):
 
     # Capture the arguments to save them, e.g. to play with the trained agent.
     args = dict(locals())

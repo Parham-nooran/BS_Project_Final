@@ -1,12 +1,8 @@
-'''Environment wrappers.'''
-
 import gym
 import numpy as np
 
 
 class ActionRescaler(gym.ActionWrapper):
-    '''Rescales actions from [-1, 1]^n to the true action space.
-    The baseline agents return actions in [-1, 1]^n.'''
 
     def __init__(self, env):
         assert isinstance(env.action_space, gym.spaces.Box)
@@ -23,9 +19,6 @@ class ActionRescaler(gym.ActionWrapper):
 
 
 class TimeFeature(gym.Wrapper):
-    '''Adds a notion of time in the observations.
-    It can be used in terminal timeout settings to get Markovian MDPs.
-    '''
 
     def __init__(self, env, max_steps, low=-1, high=1):
         super().__init__(env)

@@ -1,12 +1,9 @@
-'''Some basic non-learning agents used for example for debugging.'''
-
 import numpy as np
 
 from deeprl import agents
 
 
 class NormalRandom(agents.Agent):
-    '''Random agent producing actions from normal distributions.'''
 
     def __init__(self, loc=0, scale=1):
         self.loc = loc
@@ -29,7 +26,6 @@ class NormalRandom(agents.Agent):
 
 
 class UniformRandom(agents.Agent):
-    '''Random agent producing actions from uniform distributions.'''
 
     def initialize(self, observation_space, action_space, seed=None):
         self.action_size = action_space.shape[0]
@@ -48,7 +44,6 @@ class UniformRandom(agents.Agent):
 
 
 class OrnsteinUhlenbeck(agents.Agent):
-    '''Random agent producing correlated actions from an OU process.'''
 
     def __init__(self, scale=0.2, clip=2, theta=.15, dt=1e-2):
         self.scale = scale
@@ -98,7 +93,6 @@ class OrnsteinUhlenbeck(agents.Agent):
 
 
 class Constant(agents.Agent):
-    '''Agent producing a unique constant action.'''
 
     def __init__(self, constant=0):
         self.constant = constant

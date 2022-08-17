@@ -2,8 +2,6 @@ import numpy as np
 
 
 class Buffer:
-    '''Replay storing a large number of transitions for off-policy learning
-    and using n-step returns.'''
 
     def __init__(
         self, size=int(1e6), return_steps=1, batch_iterations=50,
@@ -44,11 +42,9 @@ class Buffer:
                 shape = (self.max_size,) + np.array(val).shape
                 self.buffers[key] = np.full(shape, np.nan, np.float32)
 
-        # Store the new values.
         for key, val in kwargs.items():
             self.buffers[key][self.index] = val
 
-        # Accumulate values for n-step returns.
         if self.return_steps > 1:
             self.accumulate_n_steps(kwargs)
 
@@ -79,7 +75,6 @@ class Buffer:
                 masks[:, None] * next_observations)
 
     def get(self, *keys, steps):
-        '''Get batches from named buffers.'''
 
         for _ in range(self.batch_iterations):
             total_size = self.size * self.num_workers

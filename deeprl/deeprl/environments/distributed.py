@@ -1,12 +1,9 @@
-'''Builders for distributed training.'''
-
 import multiprocessing
 
 import numpy as np
 
 
 class Sequential:
-    '''A group of environments used in sequence.'''
 
     def __init__(self, environment_builder, max_episode_steps, workers):
         self.environments = [environment_builder() for _ in range(workers)]
@@ -20,7 +17,6 @@ class Sequential:
             environment.seed(seed + i)
 
     def start(self):
-        '''Used once to get the initial observations.'''
         observations = [env.reset() for env in self.environments]
         self.lengths = np.zeros(len(self.environments), int)
         return np.array(observations, np.float32)
@@ -67,7 +63,6 @@ class Sequential:
 
 
 class Parallel:
-    '''A group of sequential environments used in parallel.'''
 
     def __init__(
         self, environment_builder, worker_groups, workers_per_group,
@@ -80,7 +75,6 @@ class Parallel:
 
     def initialize(self, seed):
         def proc(action_pipe, index, seed):
-            '''Process holding a sequential group of environments.'''
             envs = Sequential(
                 self.environment_builder, self.max_episode_steps,
                 self.workers_per_group)
@@ -113,7 +107,6 @@ class Parallel:
             process.start()
 
     def start(self):
-        '''Used once to get the initial observations.'''
         assert not self.started
         self.started = True
         observations_list = [None for _ in range(self.worker_groups)]
@@ -156,7 +149,6 @@ class Parallel:
 
 
 def distribute(environment_builder, worker_groups=1, workers_per_group=1):
-    '''Distributes workers over parallel and sequential groups.'''
     dummy_environment = environment_builder()
     max_episode_steps = dummy_environment.max_episode_steps
     del dummy_environment

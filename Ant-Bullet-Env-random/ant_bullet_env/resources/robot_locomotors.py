@@ -6,18 +6,14 @@ from .urdf_loader import URDFLoader
 
 class WalkerBaseBulletEnv(MJCFBaseBulletEnv):
 
-  def __init__(self, robot, render=False, max_goal_dist=20, goal_from_keyboard=False, random=True,
-                min_dist=50, max_dist=60):
+  def __init__(self, robot, render=False, goal_from_keyboard=False, random=True):
     # print("WalkerBase::__init__ start")
     self.camera_x = 0
     self.walk_target_x = 1e3
     self.walk_target_y = 0
     self.stateId = -1
-    self.max_goal_dist = max_goal_dist
     self.goal_from_keyboard = goal_from_keyboard
     self.random = random
-    self.min_dist = min_dist
-    self.max_dist = max_dist
     MJCFBaseBulletEnv.__init__(self, robot, render)
 
 
@@ -75,21 +71,15 @@ class WalkerBaseBulletEnv(MJCFBaseBulletEnv):
       self.cycle += 1
       self.cycle %= len(self.coordinates)
     else:
-      
-      # x = (np.random.uniform(self.min_dist, self.max_dist) if np.random.randint(2) else
-      #       np.random.uniform(-self.min_dist, -self.max_dist))
-      # y = (np.random.uniform(self.min_dist, self.max_dist) if np.random.randint(2) else
-      #       np.random.uniform(-self.min_dist, -self.max_dist))
-      # print(x, y)
 
-      choice = np.random.randint(4)
-      print("Choice: " + str(choice))
-      if choice % 2 == 0:
-        y = 0
-        x = 1e3 if choice == 0 else -1e3
-      else: 
-        x = 0
-        y = 1e3 if choice == 1 else -1e3
+      x = np.random.uniform(0, 1000)
+      x = -x if np.random.randint(2) else x
+      y = np.sqrt(1e6-x**2)
+      y = -y if np.random.randint(2) else y
+      
+      print('-'*100)
+      print("x: ", x, ", y: ", y, ", sqrt(x^2+y^2): ", np.sqrt(x**2+y**2))
+    
     return x, y
 
   def chooseGoal(self, render=True, direction=''):

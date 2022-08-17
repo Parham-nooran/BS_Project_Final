@@ -16,12 +16,9 @@ def default_model(layers):
 
 
 class TD3(agents.DDPG):
-    '''Twin Delayed Deep Deterministic Policy Gradient.
-    TD3: https://arxiv.org/pdf/1802.09477.pdf
-    '''
 
     def __init__(self, model=None, replay=None, exploration=None, actor_updater=None,
-        critic_updater=None, delay_steps=2, layers=(256, 256, 256)):
+        critic_updater=None, delay_steps=2, layers=(256, 256)):
 
         model = model or default_model(layers=layers)
         critic_updater = critic_updater or \

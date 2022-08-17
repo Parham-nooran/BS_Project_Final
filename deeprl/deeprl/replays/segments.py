@@ -4,7 +4,6 @@ from deeprl import replays
 
 
 class Segment:
-    '''Replay storing recent transitions for on-policy learning.'''
 
     def __init__(
         self, size=4096, batch_iterations=80, batch_size=None,
@@ -48,7 +47,6 @@ class Segment:
         return {k: replays.flatten_batch(self.buffers[k]) for k in keys}
 
     def get(self, *keys):
-        '''Get mini-batches from named buffers.'''
 
         batch = self.get_full(*keys)
 

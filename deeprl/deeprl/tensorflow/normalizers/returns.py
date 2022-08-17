@@ -27,7 +27,6 @@ class Return(tf.keras.Model):
             elif val > self.max_reward:
                 self.max_reward = np.float32(val)
 
-    # Careful: do not use in @tf.function
     def update(self):
         self._update(self.min_reward, self.max_reward)
 

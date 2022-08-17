@@ -1,11 +1,8 @@
 import numpy as np
 
 
-def lambda_returns(
-    values, next_values, rewards, resets, terminations, discount_factor,
-    trace_decay
-):
-    '''Function used to calculate lambda-returns on parallel buffers.'''
+def lambda_returns(values, next_values, rewards, resets, terminations, discount_factor,
+    trace_decay):
 
     returns = np.zeros_like(values)
     last_returns = next_values[-1]

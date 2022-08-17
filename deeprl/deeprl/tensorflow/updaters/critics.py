@@ -2,7 +2,7 @@ import tensorflow as tf
 
 from deeprl.tensorflow import updaters
 
-
+# A2C
 class VRegression:
     def __init__(self, loss=None, optimizer=None, gradient_clip=0):
         self.loss = loss or tf.keras.losses.MeanSquaredError()

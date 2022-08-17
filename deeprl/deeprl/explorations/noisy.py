@@ -1,5 +1,3 @@
-'''Non-differentiable noisy exploration methods.'''
-
 import numpy as np
 
 

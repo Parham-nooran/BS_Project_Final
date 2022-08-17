@@ -6,7 +6,7 @@ from deeprl.tensorflow import models
 
 FLOAT_EPSILON = 1e-8
 
-
+# SAC
 class SquashedMultivariateNormalDiag:
     def __init__(self, loc, scale):
         self._distribution = tfp.distributions.MultivariateNormalDiag(
@@ -25,21 +25,17 @@ class SquashedMultivariateNormalDiag:
         return tf.tanh(samples)
 
     def log_prob(self, samples):
-        '''Required unsquashed samples cannot be accurately recovered.'''
-        raise NotImplementedError(
-            'Not implemented to avoid approximation errors. '
+        raise NotImplementedError('Not implemented to avoid approximation errors. '
             'Use sample_with_log_prob directly.')
 
     def mode(self):
         return tf.tanh(self._distribution.mode())
 
+# A2C
+class DetachedScaleGaussianPolicyHead(tf.keras.Model): 
+    def __init__(self, loc_activation='tanh', dense_loc_kwargs=None, log_scale_init=0.,
+        scale_min=1e-4, scale_max=1., distribution=tfp.distributions.MultivariateNormalDiag):
 
-class DetachedScaleGaussianPolicyHead(tf.keras.Model):
-    def __init__(
-        self, loc_activation='tanh', dense_loc_kwargs=None, log_scale_init=0.,
-        scale_min=1e-4, scale_max=1.,
-        distribution=tfp.distributions.MultivariateNormalDiag
-    ):
         super().__init__()
         self.loc_activation = loc_activation
         if dense_loc_kwargs is None:
@@ -64,7 +60,7 @@ class DetachedScaleGaussianPolicyHead(tf.keras.Model):
         scale = tf.tile(scale, (batch_size, 1))
         return self.distribution(loc, scale)
 
-
+# PPO
 class GaussianPolicyHead(tf.keras.Model):
     def __init__(
         self, loc_activation='tanh', dense_loc_kwargs=None,
@@ -97,7 +93,7 @@ class GaussianPolicyHead(tf.keras.Model):
         scale = tf.clip_by_value(scale, self.scale_min, self.scale_max)
         return self.distribution(loc, scale)
 
-
+# DDPG, TD3
 class DeterministicPolicyHead(tf.keras.Model):
     def __init__(self, activation='tanh', dense_kwargs=None):
         super().__init__()

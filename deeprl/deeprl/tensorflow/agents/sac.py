@@ -9,8 +9,7 @@ def default_model(layers):
         actor=models.Actor(
             encoder=models.ObservationEncoder(),
             torso=models.MLP(layers, 'relu'),
-            head=models.GaussianPolicyHead(
-                loc_activation=None,
+            head=models.GaussianPolicyHead(loc_activation=None,
                 distribution=models.SquashedMultivariateNormalDiag)),
         critic=models.Critic(
             encoder=models.ObservationActionEncoder(),
@@ -20,12 +19,9 @@ def default_model(layers):
 
 
 class SAC(agents.DDPG):
-    '''Soft Actor-Critic.
-    SAC: https://arxiv.org/pdf/1801.01290.pdf
-    '''
 
     def __init__(self, model=None, replay=None, exploration=None, actor_updater=None,
-        critic_updater=None, layers=(256, 256, 256)):
+        critic_updater=None, layers=(256, 256)):
 
         model = model or default_model(layers=layers)
         exploration = exploration or explorations.NoActionNoise()

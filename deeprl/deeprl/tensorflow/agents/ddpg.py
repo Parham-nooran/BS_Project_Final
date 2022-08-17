@@ -18,12 +18,9 @@ def default_model(layers):
 
 
 class DDPG(agents.Agent):
-    '''Deep Deterministic Policy Gradient.
-    DDPG: https://arxiv.org/pdf/1509.02971.pdf
-    '''
 
     def __init__(self, model=None, replay=None, exploration=None, actor_updater=None,
-        critic_updater=None, layers=(256, 256, 256)):
+        critic_updater=None, layers=(256, 256)):
         
         self.model = model or default_model(layers)
         self.replay = replay or replays.Buffer()
@@ -42,33 +39,27 @@ class DDPG(agents.Agent):
         self.critic_updater.initialize(self.model)
 
     def step(self, observations, steps):
-        # Get actions from the actor and exploration method.
         actions = self.exploration(observations, steps)
 
-        # Keep some values for the next update.
         self.last_observations = observations.copy()
         self.last_actions = actions.copy()
 
         return actions
 
     def test_step(self, observations, steps):
-        # Greedy actions for testing.
         return self._greedy_actions(observations).numpy()
 
     def update(self, observations, rewards, resets, terminations, steps):
-        # Store the last transitions in the replay.
         self.replay.store(
             observations=self.last_observations, actions=self.last_actions,
             next_observations=observations, rewards=rewards, resets=resets,
             terminations=terminations)
 
-        # Prepare to update the normalizers.
         if self.model.observation_normalizer:
             self.model.observation_normalizer.record(self.last_observations)
         if self.model.return_normalizer:
             self.model.return_normalizer.record(rewards)
 
-        # Update the model if the replay is ready.
         if self.replay.ready(steps):
             self._update(steps)
 
@@ -85,7 +76,6 @@ class DDPG(agents.Agent):
         keys = ('observations', 'actions', 'next_observations', 'rewards',
                 'discounts')
 
-        # Update both the actor and the critic multiple times.
         for batch in self.replay.get(*keys, steps=steps):
             infos = self._update_actor_critic(**batch)
 
@@ -93,7 +83,6 @@ class DDPG(agents.Agent):
                 for k, v in infos[key].items():
                     logger.store(key + '/' + k, v.numpy())
 
-        # Update the normalizers.
         if self.model.observation_normalizer:
             self.model.observation_normalizer.update()
         if self.model.return_normalizer:
