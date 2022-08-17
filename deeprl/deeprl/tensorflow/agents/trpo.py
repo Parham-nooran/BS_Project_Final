@@ -9,13 +9,11 @@ class TRPO(agents.A2C):
     TRPO: https://arxiv.org/pdf/1502.05477.pdf
     '''
 
-    def __init__(
-        self, model=None, replay=None, actor_updater=None, critic_updater=None
-    ):
+    def __init__(self, model=None, replay=None, actor_updater=None, critic_updater=None, layers=(64, 64, 64)):
         actor_updater = actor_updater or updaters.TrustRegionPolicyGradient()
         super().__init__(
             model=model, replay=replay, actor_updater=actor_updater,
-            critic_updater=critic_updater)
+            critic_updater=critic_updater, layers=layers)
 
     def step(self, observations, steps):
         # Sample actions and get their log-probabilities for training.

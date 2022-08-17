@@ -9,13 +9,12 @@ class PPO(agents.A2C):
     PPO: https://arxiv.org/pdf/1707.06347.pdf
     '''
 
-    def __init__(
-        self, model=None, replay=None, actor_updater=None, critic_updater=None
-    ):
+    def __init__(self, model=None, replay=None, actor_updater=None, critic_updater=None, layers=(64, 64, 64)):
+
         actor_updater = actor_updater or updaters.ClippedRatio()
         super().__init__(
             model=model, replay=replay, actor_updater=actor_updater,
-            critic_updater=critic_updater)
+            critic_updater=critic_updater, layers=layers)
 
     def _update(self):
         # Compute the lambda-returns.

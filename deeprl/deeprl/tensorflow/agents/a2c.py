@@ -4,15 +4,15 @@ from deeprl import logger, replays
 from deeprl.tensorflow import agents, models, normalizers, updaters
 
 
-def default_model():
+def default_model(layers):
     return models.ActorCritic(
         actor=models.Actor(
             encoder=models.ObservationEncoder(),
-            torso=models.MLP((64, 64), 'tanh'),
+            torso=models.MLP(layers, 'tanh'),
             head=models.DetachedScaleGaussianPolicyHead()),
         critic=models.Critic(
             encoder=models.ObservationEncoder(),
-            torso=models.MLP((64, 64), 'tanh'),
+            torso=models.MLP(layers, 'tanh'),
             head=models.ValueHead()),
         observation_normalizer=normalizers.MeanStd())
 
@@ -22,10 +22,8 @@ class A2C(agents.Agent):
     A3C: https://arxiv.org/pdf/1602.01783.pdf
     '''
 
-    def __init__(
-        self, model=None, replay=None, actor_updater=None, critic_updater=None
-    ):
-        self.model = model or default_model()
+    def __init__(self, model=None, replay=None, actor_updater=None, critic_updater=None, layers=(64, 64, 64)):
+        self.model = model or default_model(layers)
         self.replay = replay or replays.Segment()
         self.actor_updater = actor_updater or \
             updaters.StochasticPolicyGradient()

@@ -4,15 +4,15 @@ from deeprl import logger, replays
 from deeprl.tensorflow import agents, models, normalizers, updaters
 
 
-def default_model():
+def default_model(layers):
     return models.ActorCriticWithTargets(
         actor=models.Actor(
             encoder=models.ObservationEncoder(),
-            torso=models.MLP((256, 256), 'relu'),
+            torso=models.MLP(layers, 'relu'),
             head=models.GaussianPolicyHead()),
         critic=models.Critic(
             encoder=models.ObservationActionEncoder(),
-            torso=models.MLP((256, 256), 'relu'),
+            torso=models.MLP(layers, 'relu'),
             head=models.ValueHead()),
         observation_normalizer=normalizers.MeanStd())
 
@@ -23,10 +23,10 @@ class MPO(agents.Agent):
     MO-MPO: https://arxiv.org/pdf/2005.07513.pdf
     '''
 
-    def __init__(
-        self, model=None, replay=None, actor_updater=None, critic_updater=None
-    ):
-        self.model = model or default_model()
+    def __init__(self, model=None, replay=None, actor_updater=None, critic_updater=None,
+        layers=(256, 256, 256)):
+
+        self.model = model or default_model(layers)
         self.replay = replay or replays.Buffer(return_steps=5)
         self.actor_updater = actor_updater or \
             updaters.MaximumAPosterioriPolicyOptimization()

@@ -2,15 +2,15 @@ from deeprl import logger
 from deeprl.tensorflow import agents, models, normalizers, updaters
 
 
-def default_model():
+def default_model(layers):
     return models.ActorTwinCriticWithTargets(
         actor=models.Actor(
             encoder=models.ObservationEncoder(),
-            torso=models.MLP((256, 256), 'relu'),
+            torso=models.MLP(layers, 'relu'),
             head=models.DeterministicPolicyHead()),
         critic=models.Critic(
             encoder=models.ObservationActionEncoder(),
-            torso=models.MLP((256, 256), 'relu'),
+            torso=models.MLP(layers, 'relu'),
             head=models.ValueHead()),
         observation_normalizer=normalizers.MeanStd())
 
@@ -20,16 +20,15 @@ class TD3(agents.DDPG):
     TD3: https://arxiv.org/pdf/1802.09477.pdf
     '''
 
-    def __init__(
-        self, model=None, replay=None, exploration=None, actor_updater=None,
-        critic_updater=None, delay_steps=2
-    ):
-        model = model or default_model()
+    def __init__(self, model=None, replay=None, exploration=None, actor_updater=None,
+        critic_updater=None, delay_steps=2, layers=(256, 256, 256)):
+
+        model = model or default_model(layers=layers)
         critic_updater = critic_updater or \
             updaters.TwinCriticDeterministicQLearning()
         super().__init__(
             model=model, replay=replay, exploration=exploration,
-            actor_updater=actor_updater, critic_updater=critic_updater)
+            actor_updater=actor_updater, critic_updater=critic_updater, layers=layers)
         self.delay_steps = delay_steps
         self.model.critic = self.model.critic_1
 

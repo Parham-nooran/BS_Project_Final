@@ -8,11 +8,7 @@ class MeanStd(tf.keras.Model):
         self.mean = mean
         self.std = std
         self.clip = clip
-        self.count = 0
-        self.new_sum = 0
-        self.new_sum_sq = 0
-        self.new_count = 0
-        self.eps = 1e-2
+        self.count, self.new_sum, self.new_sum_sq, self.new_count, self.eps = 0, 0, 0, 0, 1e-2
         if shape:
             self.initialize(shape)
 
@@ -55,9 +51,7 @@ class MeanStd(tf.keras.Model):
         self.mean_sq = w_old * self.mean_sq + w_new * new_mean_sq
         self.std = self._compute_std(self.mean, self.mean_sq)
         self.count = new_count
-        self.new_count = 0
-        self.new_sum = 0
-        self.new_sum_sq = 0
+        self.new_count, self.new_sum, self.new_sum_sq = 0, 0, 0
         self._update(self.mean.astype(np.float32), self.std.astype(np.float32))
 
     def _compute_std(self, mean, mean_sq):
