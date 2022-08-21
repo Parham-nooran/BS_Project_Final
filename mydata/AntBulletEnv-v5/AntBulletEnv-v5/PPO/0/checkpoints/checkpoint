@@ -1,0 +1,2 @@
+model_checkpoint_path: "step_2500000"
+all_model_checkpoint_paths: "step_2500000"

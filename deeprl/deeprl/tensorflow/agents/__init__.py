@@ -5,6 +5,7 @@ from .ddpg import DDPG
 from .ppo import PPO
 from .sac import SAC
 from .td3 import TD3
+from .mpo import MPO
+from .trpo import TRPO
 
-
-__all__ = [Agent, A2C, DDPG, PPO, SAC, TD3]
+__all__ = [Agent, A2C, DDPG, MPO, PPO, SAC, TD3, TRPO]

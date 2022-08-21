@@ -9,7 +9,11 @@ ant_bullet_env/envs/ant_bullet_env.py
 ant_bullet_env/resources/__init__.py
 ant_bullet_env/resources/bullet_client.py
 ant_bullet_env/resources/env_bases.py
+ant_bullet_env/resources/heightfield.py
+ant_bullet_env/resources/mjcf_loader.py
 ant_bullet_env/resources/robot_bases.py
 ant_bullet_env/resources/robot_locomotors.py
 ant_bullet_env/resources/scene_stadium.py
+ant_bullet_env/resources/terrain.py
 ant_bullet_env/resources/urdf_loader.py
+ant_bullet_env/resources/statics/laikago/laikago/laikago.py

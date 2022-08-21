@@ -1,21 +1,129 @@
 import numpy as np
 import pybullet
-from .env_bases import MJCFBaseBulletEnv
-from .scene_stadium import SinglePlayerStadiumScene
-from .urdf_loader import URDFLoader
+from os.path import exists
+from ant_bullet_env.resources.env_bases import MJCFBaseBulletEnv
+from ant_bullet_env.resources.scene_stadium import SinglePlayerStadiumScene
+from ant_bullet_env.resources.urdf_loader import URDFLoader
+import keyboard
+import cv2
+import termcolor
+
+def solve_maze(file_path, offset=20, check = 20, debug=False):
+    image = cv2.imread(file_path)
+    img = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    x, y = img.shape
+    points = []
+    print(x, y)
+    current_x, current_y = offset, 5
+    direction = 'down'
+    done = False
+    min_distance = 6
+    
+    for i in range(204):
+        if debug:
+          print('-'*100)
+          print(i)
+          cv2.circle(image, (current_y, current_x), 3, (0, 255, 0), 1)
+          cv2.imshow('test', image)
+          key = cv2.waitKey()
+          if key == ord('q') or key == 27:
+              break
+        points.append((-current_y, current_x))
+        
+        if direction == 'down':
+            if debug:
+              print("turn left or not", img[current_x, current_y:current_y+check])
+            if sum(img[current_x, current_y:current_y+check]) > 0:
+                if debug:
+                  print("direct or not", img[current_x:current_x+check, current_y])
+                if sum(img[current_x:current_x+check, current_y]) == 0:
+                    current_x += offset
+                else:
+                    direction = 'right'
+            else:
+                direction = 'left'
+                current_y += offset
+
+        elif direction == 'left':
+            if debug:
+              print("turn left or not", img[current_x-check:current_x, current_y])
+            if sum(img[current_x-check:current_x, current_y]) > 0:
+                if debug:
+                  print("direct or not", img[current_x, current_y:current_y+check])
+                if sum(img[current_x, current_y:current_y+check]) == 0:
+                    current_y += offset
+                else:
+                    direction = 'down'
+            else:
+                direction = 'up'
+                current_x -= offset
+
+        elif direction == 'up':
+            if debug:
+              print("turn left or not", img[current_x, current_y-check:current_y])
+            if sum(img[current_x, current_y-check:current_y]) > 0:
+                if debug:
+                  print("direct or not", img[current_x-check:current_x, current_y])
+                if sum(img[current_x-check:current_x, current_y]) == 0:
+                    current_x -= offset
+                else:
+                    direction = 'left'
+                    # current_y += offset
+            else:
+                direction = 'right'
+                current_y -= offset
+
+        elif direction == 'right':
+            if debug:
+              print("turn left or not", img[current_x:current_x+check, current_y])
+            if sum(img[current_x:current_x+check, current_y]) > 0:
+                if debug:
+                  print("direct or not", img[current_x, current_y-check:current_y])
+                if sum(img[current_x, current_y-check:current_y]) == 0:
+                    current_y -= offset
+                else:
+                    direction = 'up'
+            else:
+                direction = 'down'
+                current_x += offset
+        
+        if debug:
+          print(direction)
+
+        if sum(img[current_x-min_distance:current_x, current_y]) > 0:
+            current_x += min_distance
+        if sum(img[current_x:current_x+min_distance, current_y]) > 0:
+            current_x -= min_distance
+        if sum(img[current_x, current_y-min_distance:current_y]) > 0:
+            current_y += min_distance
+        if sum(img[current_x, current_y:current_y+min_distance]) > 0:
+            current_y -= min_distance
+    return points 
+
 
 class WalkerBaseBulletEnv(MJCFBaseBulletEnv):
 
-  def __init__(self, robot, render=False, goal_from_keyboard=False, random=True):
+  def __init__(self, robot, render, random, max_goal_dist=90, min_dist=5, max_dist=40, goal_from_keyboard=False):
     # print("WalkerBase::__init__ start")
     self.camera_x = 0
-    self.walk_target_x = 1e3
-    self.walk_target_y = 0
+    self.walk_target_x, self.walk_target_y = self.robot.walk_target_x, self.robot.walk_target_y  # kilometer away
     self.stateId = -1
-    self.goal_from_keyboard = goal_from_keyboard
+    self.cycle = 0
     self.random = random
+    self.max_goal_dist = max_goal_dist
+    self.min_dist = min_dist
+    self.max_dist = max_dist
+    if not random and not goal_from_keyboard:
+      self.coordinates = solve_maze('C:/Users/Parham/Downloads/Project/Maze_Solver/test2.png')
     MJCFBaseBulletEnv.__init__(self, robot, render)
-
+    self.times_we_got_it = 0
+    self.goal_from_keyboard = goal_from_keyboard
+    self.chooseGoal(render=False)
+    if self.goal_from_keyboard:
+      keyboard.add_hotkey('up', self.chooseGoal, args=(True, False, 'up'))
+      keyboard.add_hotkey('down', self.chooseGoal, args=(True, False, 'down'))
+      keyboard.add_hotkey('right', self.chooseGoal, args=(True, False, 'right'))
+      keyboard.add_hotkey('left', self.chooseGoal, args=(True, False, 'left'))
 
   def create_single_player_scene(self, bullet_client):
     self.stadium_scene = SinglePlayerStadiumScene(bullet_client,
@@ -24,11 +132,12 @@ class WalkerBaseBulletEnv(MJCFBaseBulletEnv):
                                                   frame_skip=4)
     return self.stadium_scene
 
-  def reset(self, is_first=False):
-    if (self.stateId >= 0):
-      # print("restoreState self.stateId:",self.stateId)
-      self._p.restoreState(self.stateId)
-    
+
+  def reset(self):
+    # if (self.stateId >= 0):
+    #   print("restoreState self.stateId:",self.stateId)
+    #   self._p.restoreState(self.stateId)
+
     r = MJCFBaseBulletEnv.reset(self)
     self._p.configureDebugVisualizer(pybullet.COV_ENABLE_RENDERING, 0)
 
@@ -39,10 +148,7 @@ class WalkerBaseBulletEnv(MJCFBaseBulletEnv):
     self._p.configureDebugVisualizer(pybullet.COV_ENABLE_RENDERING, 1)
     if (self.stateId < 0):
       self.stateId = self._p.saveState()
-      # print("saving state self.stateId:",self.stateId)
-    
-    if not is_first:
-      self.chooseGoal()
+      #print("saving state self.stateId:",self.stateId)
 
     return r
 
@@ -64,29 +170,41 @@ class WalkerBaseBulletEnv(MJCFBaseBulletEnv):
   foot_ground_object_names = set(["floor"])  # to distinguish ground and other objects
   joints_at_limit_cost = -0.1  # discourage stuck joints
 
-
-  def getNextGoalCoordinates(self):
-    if not self.random:
-      x, y = self.coordinates[self.cycle]
-      self.cycle += 1
-      self.cycle %= len(self.coordinates)
+  def getNextGoalCoordinates(self, from_file=False):
+    # from_file = from_file and exists('C:\\Users\\Parham\\Downloads\\Project\\Envs\\Ant-Bullet-Env\\ant_bullet_env\\resources\\goals.txt')
+    if from_file:
+      with open('C:\\Users\\Parham\\Downloads\\Project\\Envs\\Ant-Bullet-Env\\ant_bullet_env\\resources\\goals.txt', 'r') as file:
+        list_of_lines = file.readlines()
+        # number_of_lines = len(list_of_lines)
+        goal_line = list_of_lines[self.times_we_got_it]
+        x, y = (int(s) for s in goal_line.split(' ') if s.isdigit())     
     else:
-
-      x = np.random.uniform(0, 1000)
-      x = -x if np.random.randint(2) else x
-      y = np.sqrt(1e6-x**2)
-      y = -y if np.random.randint(2) else y
-      
-      print('-'*100)
-      print("x: ", x, ", y: ", y, ", sqrt(x^2+y^2): ", np.sqrt(x**2+y**2))
-    
+      if not self.random:
+        x, y = self.coordinates[self.cycle]
+        self.cycle += 1
+        self.cycle %= len(self.coordinates)
+      else:
+        x = (np.random.uniform(self.min_dist, self.max_dist) if np.random.randint(2) else
+              np.random.uniform(-self.min_dist, -self.max_dist))
+        y = (np.random.uniform(self.min_dist, self.max_dist) if np.random.randint(2) else
+              np.random.uniform(-self.min_dist, -self.max_dist))
+        # choice = np.random.randint(4)
+        # print(termcolor.colored('Choice: '+str(choice), 'yellow', attrs=['bold']))
+        # if choice % 2 == 0:
+        #   y = 0
+        #   x = 1e3 if choice == 0 else -1e3
+        # else: 
+        #   x = 0
+        #   y = 1e3 if choice == 1 else -1e3
     return x, y
-
-  def chooseGoal(self, render=True, direction=''):
+  
+  def chooseGoal(self, render=True, from_file=False, direction=''):
+    # print(f"{self.times_we_got_it}-Yeah we got it")
+    # print("*"*20)
     change = True
     direction_dist = 7
     if not self.goal_from_keyboard:
-      x, y = self.getNextGoalCoordinates()
+      x, y = self.getNextGoalCoordinates(from_file=from_file)
     else:
       if direction == 'up':
         x, y = self.robot.body_xyz[0] - direction_dist, self.robot.body_xyz[1]
@@ -100,12 +218,13 @@ class WalkerBaseBulletEnv(MJCFBaseBulletEnv):
         change = False
     if change:        
       self.walk_target_x, self.walk_target_y = (x, y)
+      # self.times_we_got_it += 1
       self.robot.walk_target_x, self.robot.walk_target_y = (x, y)
-      # if render:
-      #   URDFLoader(self._p._client, address='./statics/simplegoal.urdf', base=(x, y, 0))
+      if render:
+        URDFLoader(self._p._client, address='./statics/simplegoal.urdf', base=(x, y, 0))
+    # print(f"{self.times_we_got_it}-produced")
+
   
-
-
   def step(self, a):
     if not self.scene.multiplayer:  # if multiplayer, action first applied to all robots, then global step() called, then _step() for all robots with the same actions
       self.robot.apply_action(a)
@@ -125,9 +244,9 @@ class WalkerBaseBulletEnv(MJCFBaseBulletEnv):
     potential_old = self.potential
     self.potential = self.robot.calc_potential()
     progress = float(self.potential - potential_old)
-    # if(np.abs(self.potential) < self.max_goal_dist):
-    #   self.chooseGoal()
-    #   self.walk_target_x, self.walk_target_y = self.robot.walk_target_x, self.robot.walk_target_y
+    if(np.abs(self.potential) < self.max_goal_dist):
+      self.chooseGoal()
+      self.walk_target_x, self.walk_target_y = self.robot.walk_target_x, self.robot.walk_target_y
 
     feet_collision_cost = 0.0
     for i, f in enumerate(
@@ -141,7 +260,8 @@ class WalkerBaseBulletEnv(MJCFBaseBulletEnv):
         self.robot.feet_contact[i] = 1.0
       else:
         self.robot.feet_contact[i] = 0.0
-
+    
+    
     electricity_cost = self.electricity_cost * float(np.abs(a * self.robot.joint_speeds).mean(
     ))  # let's assume we have DC motor with controller, and reverse current braking
     electricity_cost += self.stall_torque_cost * float(np.square(a).mean())
