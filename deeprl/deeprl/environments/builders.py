@@ -7,6 +7,10 @@ from deeprl.utils import logger
 def gym_environment(*args, **kwargs):
     
     def _builder(*args, **kwargs):
+        try:
+            import rex_gym
+        except:
+            print('Could not import rex_gym')
         return gym.make(*args, **kwargs)
 
     return build_environment(_builder, *args, **kwargs)
@@ -15,8 +19,14 @@ def gym_environment(*args, **kwargs):
 def bullet_environment(*args, **kwargs):
 
     def _builder(*args, **kwargs):
-        import pybullet_envs  
-        import parham_envs
+        try:
+            import pybullet_envs
+        except:
+            print("Could not import pybullet_envs")
+        try:
+            import parham_envs
+        except:
+            print("Could not import parham_envs")
         return gym.make(*args, **kwargs)
 
     return build_environment(_builder, *args, **kwargs)

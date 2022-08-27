@@ -35,20 +35,18 @@
 
 
 import gym
-import parham_envs
-import pybullet
+import rex_gym
 import time
 
 env = gym.make('RexBulletEnv-v0')
-env.render()
-
+# env.render()
+# env.reset()
 for i in range(1000):
     env.reset()
     action = env.action_space.sample()
     new_obs, reward, done, info = env.step(action)
     while not done:
         env.render()
-        # print(env.robot.body_xyz)
         action = env.action_space.sample()
         new_obs, reward, done, info = env.step(action)
         time.sleep(0.001)

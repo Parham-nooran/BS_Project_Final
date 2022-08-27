@@ -54,8 +54,7 @@ class Trainer:
             for i in range(num_workers):
                 if infos['resets'][i]:
                     logger.store('train/episode_score', scores[i], stats=True)
-                    logger.store(
-                        'train/episode_length', lengths[i], stats=True)
+                    logger.store('train/episode_length', lengths[i], stats=True)
                     scores[i] = 0
                     lengths[i] = 0
                     episodes += 1

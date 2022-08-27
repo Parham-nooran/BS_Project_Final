@@ -6,6 +6,9 @@ currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentfram
 parentdir = os.path.dirname(currentdir)
 os.sys.path.insert(0, parentdir)
 import pybullet_data
+from .urdf_loader import URDFLoader
+from .terrain import Terrain
+from .mjcf_loader import MJCFLoader
 
 class XmlBasedRobot:
 
@@ -23,7 +26,6 @@ class XmlBasedRobot:
     high = np.inf * np.ones([obs_dim], dtype=np.float32)
     self.observation_space = gym.spaces.Box(-high, high, dtype=np.float32)
 
-    #self.model_xml = model_xml
     self.robot_name = robot_name
     self.self_collision = self_collision
 
@@ -103,10 +105,20 @@ class XmlBasedRobot:
 
 class MJCFBasedRobot(XmlBasedRobot):
 
-  def __init__(self, model_xml, robot_name, action_dim, obs_dim, self_collision=True):
+  def __init__(self, model_xml, robot_name, action_dim, obs_dim, self_collision, terrain_source, terrain_id, load_terrain,
+               columns, rows, width, length, height):
     XmlBasedRobot.__init__(self, robot_name, action_dim, obs_dim, self_collision)
     self.model_xml = model_xml
+    self.terrain_source = terrain_source
+    self.terrain_id = terrain_id
+    self.load_terrain = load_terrain
     self.doneLoading = 0
+    self.columns = columns
+    self.rows = rows
+    self.width = width
+    self.length = length
+    self.height = height
+    
 
   def reset(self, bullet_client):
 
@@ -114,14 +126,19 @@ class MJCFBasedRobot(XmlBasedRobot):
     if (self.doneLoading == 0):
       self.ordered_joints = []
       self.doneLoading = 1
-      if self.self_collision:
-        self.objects = self._p.loadMJCF(os.path.join(pybullet_data.getDataPath(), "mjcf", self.model_xml),
-                                        flags=pybullet.URDF_USE_SELF_COLLISION |
-                                        pybullet.URDF_USE_SELF_COLLISION_EXCLUDE_ALL_PARENTS |
-                                        pybullet.URDF_GOOGLEY_UNDEFINED_COLORS )
-      else:
-        self.objects = self._p.loadMJCF(
-            os.path.join(pybullet_data.getDataPath(), "mjcf", self.model_xml, flags = pybullet.URDF_GOOGLEY_UNDEFINED_COLORS))
+
+      ######################################################################
+      URDFLoader(self._p._client, address='./statics/simplegoal.urdf', base=(self.walk_target_x, self.walk_target_y, 0))
+      if self.load_terrain:
+        terrain = Terrain(self.terrain_source, self.terrain_id, columns=self.columns, rows=self.rows, width=self.width,
+                         length=self.length, height=self.height)
+        terrain.generate_terrain(self._p, height_perturbation_range=0.25)
+      #######################################################################
+      
+      #######################################################################
+      mjcf_loader = MJCFLoader(self._p, self.self_collision, address='./statics/'+ self.model_xml)
+      self.objects = mjcf_loader.objects
+      #######################################################################
       
       self.parts, self.jdict, self.ordered_joints, self.robot_body = self.addToScene(
           self._p, self.objects)
@@ -137,8 +154,9 @@ class MJCFBasedRobot(XmlBasedRobot):
 
 class URDFBasedRobot(XmlBasedRobot):
 
-  def __init__(self, model_xml, robot_name, action_dim, obs_dim, self_collision=True):
+  def __init__(self, model_xml, robot_name, action_dim, obs_dim, positional_orientation=[0, .5, .5, 0], self_collision=True):
     XmlBasedRobot.__init__(self, robot_name, action_dim, obs_dim, self_collision)
+    self.positional_orientation = positional_orientation
     self.model_xml = model_xml
     self.doneLoading = 0
 
@@ -149,7 +167,7 @@ class URDFBasedRobot(XmlBasedRobot):
       self.ordered_joints = []
       self.doneLoading = 1
 
-      quadruped = self.objects = self._p.loadURDF(os.path.join(pybullet_data.getDataPath(), self.model_xml), [0,0,.5], [0,0.5,0.5,0], useFixedBase=False, 
+      quadruped = self.objects = self._p.loadURDF(self.model_xml, [0,0,.5], self.positional_orientation, useFixedBase=False, 
                                         flags=pybullet.URDF_USE_SELF_COLLISION |
                                         pybullet.URDF_GOOGLEY_UNDEFINED_COLORS )
       
@@ -193,12 +211,12 @@ class Pose_Helper:  # dummy class to comply to original interface
 
 class URDFWalkerBase(URDFBasedRobot):
 
-  def __init__(self, fn, robot_name, action_dim, obs_dim, power):
-    URDFBasedRobot.__init__(self, fn, robot_name, action_dim, obs_dim)
+  def __init__(self, fn, robot_name, action_dim, obs_dim, power, positional_orientation):
+    URDFBasedRobot.__init__(self, fn, robot_name, action_dim, obs_dim, positional_orientation)
     self.power = power
     self.camera_x = 0
     self.start_pos_x, self.start_pos_y, self.start_pos_z = 0, 0, 0
-    self.walk_target_x = 1e3  # kilometer away
+    self.walk_target_x = 1  # kilometer away
     self.walk_target_y = 0
     self.body_xyz = [0, 0, 0]
 
@@ -277,12 +295,14 @@ class URDFWalkerBase(URDFBasedRobot):
 
 class MJCFWalkerBase(MJCFBasedRobot):
 
-  def __init__(self, fn, robot_name, action_dim, obs_dim, power):
-    MJCFBasedRobot.__init__(self, fn, robot_name, action_dim, obs_dim)
+  def __init__(self, fn, robot_name, action_dim, obs_dim, power, self_collision=True, terrain_source='random', terrain_id='mounts',
+                load_terrain=False, columns=256, rows=256, width=0.5, length=0.5, height=1):
+    MJCFBasedRobot.__init__(self, fn, robot_name, action_dim, obs_dim, self_collision, terrain_source, terrain_id, load_terrain=load_terrain,
+               columns=columns, rows=rows, width=width, length=length, height=height)
     self.power = power
     self.camera_x = 0
     self.start_pos_x, self.start_pos_y, self.start_pos_z = 0, 0, 0
-    self.walk_target_x = 1e3  # kilometer away
+    self.walk_target_x = 1  # kilometer away
     self.walk_target_y = 0
     self.body_xyz = [0, 0, 0]
 
@@ -304,8 +324,6 @@ class MJCFWalkerBase(MJCFBasedRobot):
   def calc_state(self):
     j = np.array([j.current_relative_position() for j in self.ordered_joints],
                  dtype=np.float32).flatten()
-    # even elements [0::2] position, scaled to -1..+1 between limits
-    # odd elements  [1::2] angular speed, scaled to show -1..+1
     self.joint_speeds = j[1::2]
     self.joints_at_limit = np.count_nonzero(np.abs(j[0::2]) > 0.99)
 
