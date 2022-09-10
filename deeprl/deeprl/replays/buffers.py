@@ -33,7 +33,6 @@ class Buffer:
             continuations = np.float32(1 - kwargs['terminations'])
             kwargs['discounts'] = continuations * self.discount_factor
 
-        # Create the named buffers.
         if self.buffers is None:
             self.num_workers = len(list(kwargs.values())[0])
             self.max_size = self.full_max_size // self.num_workers

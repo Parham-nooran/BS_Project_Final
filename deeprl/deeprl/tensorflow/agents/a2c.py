@@ -5,20 +5,15 @@ from deeprl.tensorflow import agents, models, normalizers, updaters
 
 
 def default_model(layers):
-    return models.ActorCritic(
-        actor=models.Actor(
-            encoder=models.ObservationEncoder(),
+    return models.ActorCritic(actor=models.Actor(encoder=models.ObservationEncoder(),
             torso=models.MLP(layers, 'tanh'),
             head=models.DetachedScaleGaussianPolicyHead()),
-        critic=models.Critic(
-            encoder=models.ObservationEncoder(),
+        critic=models.Critic(encoder=models.ObservationEncoder(),
             torso=models.MLP(layers, 'tanh'),
-            head=models.ValueHead()),
-        observation_normalizer=normalizers.MeanStd())
+            head=models.ValueHead()), observation_normalizer=normalizers.MeanStd())
 
 
 class A2C(agents.Agent):
-
     def __init__(self, model=None, replay=None, actor_updater=None, critic_updater=None, layers=(64, 64)):
         self.model = model or default_model(layers)
         self.replay = replay or replays.Segment()

@@ -47,7 +47,7 @@ class StochasticPolicyGradient:
 
         return dict(loss=loss, kl=kl, entropy=entropy, std=std)
 
-
+# PPO
 class ClippedRatio:
     def __init__(
         self, optimizer=None, ratio_clip=0.2, kl_threshold=0.015,
@@ -103,7 +103,7 @@ class ClippedRatio:
             loss=loss, kl=kl, entropy=entropy, clip_fraction=clip_fraction,
             std=std, stop=kl > self.kl_threshold)
 
-
+# TRPO
 class TrustRegionPolicyGradient:
     def __init__(self, optimizer=None, entropy_coeff=0):
         self.optimizer = optimizer or updaters.ConjugateGradient()
@@ -148,94 +148,7 @@ class TrustRegionPolicyGradient:
         old_distributions = type(distributions)(locs, scales)
         return tf.reduce_mean(distributions.kl_divergence(old_distributions))
 
-
-class DeterministicPolicyGradient:
-    def __init__(self, optimizer=None, gradient_clip=0):
-        self.optimizer = optimizer or \
-            tf.keras.optimizers.Adam(lr=1e-3, epsilon=1e-8)
-        self.gradient_clip = gradient_clip
-
-    def initialize(self, model):
-        self.model = model
-        self.variables = self.model.actor.trainable_variables
-
-    @tf.function
-    def __call__(self, observations):
-        with tf.GradientTape() as tape:
-            actions = self.model.actor(observations)
-            values = self.model.critic(observations, actions)
-            loss = -tf.reduce_mean(values)
-
-        gradients = tape.gradient(loss, self.variables)
-        if self.gradient_clip > 0:
-            gradients = tf.clip_by_global_norm(
-                gradients, self.gradient_clip)[0]
-        self.optimizer.apply_gradients(zip(gradients, self.variables))
-
-        return dict(loss=loss)
-
-
-class DistributionalDeterministicPolicyGradient:
-    def __init__(self, optimizer=None, gradient_clip=0):
-        self.optimizer = optimizer or \
-            tf.keras.optimizers.Adam(lr=1e-3, epsilon=1e-8)
-        self.gradient_clip = gradient_clip
-
-    def initialize(self, model):
-        self.model = model
-        self.variables = self.model.actor.trainable_variables
-
-    @tf.function
-    def __call__(self, observations):
-        with tf.GradientTape() as tape:
-            actions = self.model.actor(observations)
-            value_distributions = self.model.critic(observations, actions)
-            values = value_distributions.mean()
-            loss = -tf.reduce_mean(values)
-
-        gradients = tape.gradient(loss, self.variables)
-        if self.gradient_clip > 0:
-            gradients = tf.clip_by_global_norm(
-                gradients, self.gradient_clip)[0]
-        self.optimizer.apply_gradients(zip(gradients, self.variables))
-
-        return dict(loss=loss)
-
-
-class TwinCriticSoftDeterministicPolicyGradient:
-    def __init__(self, optimizer=None, entropy_coeff=0.2, gradient_clip=0):
-        self.optimizer = optimizer or \
-            tf.keras.optimizers.Adam(lr=1e-3, epsilon=1e-8)
-        self.entropy_coeff = entropy_coeff
-        self.gradient_clip = gradient_clip
-
-    def initialize(self, model):
-        self.model = model
-        self.variables = self.model.actor.trainable_variables
-
-    @tf.function
-    def __call__(self, observations):
-        with tf.GradientTape() as tape:
-            distributions = self.model.actor(observations)
-            if hasattr(distributions, 'sample_with_log_prob'):
-                actions, log_probs = distributions.sample_with_log_prob()
-            else:
-                actions = distributions.sample()
-                log_probs = distributions.log_prob(actions)
-            values_1 = self.model.critic_1(observations, actions)
-            values_2 = self.model.critic_2(observations, actions)
-            values = tf.minimum(values_1, values_2)
-            loss = tf.reduce_mean(self.entropy_coeff * log_probs - values)
-
-        gradients = tape.gradient(loss, self.variables)
-        if self.gradient_clip > 0:
-            gradients = tf.clip_by_global_norm(
-                gradients, self.gradient_clip)[0]
-        self.optimizer.apply_gradients(zip(gradients, self.variables))
-
-        return dict(loss=loss)
-
-
+# MPO
 class MaximumAPosterioriPolicyOptimization:
     def __init__(
         self, num_samples=20, epsilon=1e-1, epsilon_penalty=1e-3,
@@ -265,7 +178,6 @@ class MaximumAPosterioriPolicyOptimization:
         self.model = model
         self.actor_variables = model.actor.trainable_variables
 
-        # Dual variables.
         self.dual_variables = []
         self.log_temperature = tf.Variable(
             [self.initial_log_temperature], dtype=tf.float32)
@@ -296,7 +208,6 @@ class MaximumAPosterioriPolicyOptimization:
             weights = tf.nn.softmax(tempered_q_values, axis=0)
             weights = tf.stop_gradient(weights)
 
-            # Temperature loss (dual of the E-step).
             q_log_sum_exp = tf.reduce_logsumexp(tempered_q_values, axis=0)
             num_actions = tf.cast(q_values.shape[0], tf.float32)
             log_num_actions = tf.math.log(num_actions)
@@ -305,7 +216,6 @@ class MaximumAPosterioriPolicyOptimization:
 
             return weights, loss
 
-        # Use independent normals to satisfy KL constraints per-dimension.
         def independent_normals(distribution_1, distribution_2=None):
             distribution_2 = distribution_2 or distribution_1
             return tfp.distributions.Independent(tfp.distributions.Normal(
@@ -345,7 +255,6 @@ class MaximumAPosterioriPolicyOptimization:
             weights, temperature_loss = weights_and_temperature_loss(
                 values, self.epsilon, temperature)
 
-            # Action penalization is quadratic beyond [-1, 1].
             if self.action_penalization:
                 penalty_temperature = tf.math.softplus(
                     self.log_penalty_temperature) + FLOAT_EPSILON
@@ -358,13 +267,11 @@ class MaximumAPosterioriPolicyOptimization:
                 weights += penalty_weights
                 temperature_loss += penalty_temperature_loss
 
-            # Decompose the policy into fixed-mean and fixed-std distributions.
             fixed_std_distribution = independent_normals(
                 distributions.distribution, target_distributions.distribution)
             fixed_mean_distribution = independent_normals(
                 target_distributions.distribution, distributions.distribution)
 
-            # Compute the decomposed policy losses.
             policy_mean_losses = tf.reduce_sum(
                 fixed_std_distribution.log_prob(actions) * weights, axis=0)
             policy_mean_loss = -tf.reduce_mean(policy_mean_losses)
@@ -372,7 +279,6 @@ class MaximumAPosterioriPolicyOptimization:
                 fixed_mean_distribution.log_prob(actions) * weights, axis=0)
             policy_std_loss = -tf.reduce_mean(policy_std_losses)
 
-            # Compute the decomposed KL between the target and online policies.
             if self.per_dim_constraining:
                 kl_mean = target_distributions.distribution.kl_divergence(
                     fixed_std_distribution.distribution)
@@ -384,13 +290,11 @@ class MaximumAPosterioriPolicyOptimization:
                 kl_std = target_distributions.kl_divergence(
                     fixed_mean_distribution)
 
-            # Compute the alpha-weighted KL-penalty and dual losses.
             kl_mean_loss, alpha_mean_loss = parametric_kl_and_dual_losses(
                 kl_mean, alpha_mean, self.epsilon_mean)
             kl_std_loss, alpha_std_loss = parametric_kl_and_dual_losses(
                 kl_std, alpha_std, self.epsilon_std)
 
-            # Combine losses.
             policy_loss = policy_mean_loss + policy_std_loss
             kl_loss = kl_mean_loss + kl_std_loss
             dual_loss = alpha_mean_loss + alpha_std_loss + temperature_loss

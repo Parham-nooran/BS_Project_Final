@@ -6,31 +6,6 @@ from deeprl.tensorflow import models
 
 FLOAT_EPSILON = 1e-8
 
-# SAC
-class SquashedMultivariateNormalDiag:
-    def __init__(self, loc, scale):
-        self._distribution = tfp.distributions.MultivariateNormalDiag(
-            loc, scale)
-
-    def sample_with_log_prob(self, shape=()):
-        samples = self._distribution.sample(shape)
-        squashed_samples = tf.tanh(samples)
-        log_probs = self._distribution.log_prob(samples)
-        log_probs -= tf.reduce_sum(
-            tf.math.log(1 - squashed_samples ** 2 + 1e-6), axis=-1)
-        return squashed_samples, log_probs
-
-    def sample(self, shape=()):
-        samples = self._distribution.sample(shape)
-        return tf.tanh(samples)
-
-    def log_prob(self, samples):
-        raise NotImplementedError('Not implemented to avoid approximation errors. '
-            'Use sample_with_log_prob directly.')
-
-    def mode(self):
-        return tf.tanh(self._distribution.mode())
-
 # A2C
 class DetachedScaleGaussianPolicyHead(tf.keras.Model): 
     def __init__(self, loc_activation='tanh', dense_loc_kwargs=None, log_scale_init=0.,
@@ -92,23 +67,6 @@ class GaussianPolicyHead(tf.keras.Model):
         scale = self.scale_layer(inputs)
         scale = tf.clip_by_value(scale, self.scale_min, self.scale_max)
         return self.distribution(loc, scale)
-
-# DDPG, TD3
-class DeterministicPolicyHead(tf.keras.Model):
-    def __init__(self, activation='tanh', dense_kwargs=None):
-        super().__init__()
-        self.activation = activation
-        if dense_kwargs is None:
-            dense_kwargs = models.default_dense_kwargs()
-        self.dense_kwargs = dense_kwargs
-
-    def initialize(self, action_size):
-        self.action_layer = tf.keras.layers.Dense(
-            action_size, self.activation, **self.dense_kwargs)
-
-    def call(self, inputs):
-        return self.action_layer(inputs)
-
 
 class Actor(tf.keras.Model):
     def __init__(self, encoder, torso, head):

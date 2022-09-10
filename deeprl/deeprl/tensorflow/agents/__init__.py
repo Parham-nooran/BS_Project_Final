@@ -1,11 +1,8 @@
 from .agent import Agent
 
 from .a2c import A2C
-from .ddpg import DDPG
 from .ppo import PPO
-from .sac import SAC
-from .td3 import TD3
 from .mpo import MPO
 from .trpo import TRPO
 
-__all__ = [Agent, A2C, DDPG, MPO, PPO, SAC, TD3, TRPO]
+__all__ = [Agent, A2C, MPO, PPO, TRPO]
