@@ -2,7 +2,7 @@ after_training: null
 agent: deeprl.tensorflow.agents.TRPO(layers=(64, 64))
 before_training: null
 checkpoint: last
-environment: deeprl.environments.Bullet('TrainingAntBulletEnv-v0')
+environment: deeprl.environments.Bullet('AntBulletEnv-v5')
 environment_name: null
 header: import deeprl.tensorflow
 name: null

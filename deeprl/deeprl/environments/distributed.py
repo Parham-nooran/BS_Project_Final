@@ -22,17 +22,16 @@ class Sequential:
         return np.array(observations, np.float32)
 
     def step(self, actions):
-        next_observations = []  # Observations for the transitions.
+        next_observations = []  
         rewards = []
         resets = []
         terminations = []
-        observations = []  # Observations for the actions selection.
+        observations = []
 
         for i in range(len(self.environments)):
             ob, rew, term, _ = self.environments[i].step(actions[i])
 
             self.lengths[i] += 1
-            # Timeouts trigger resets but are not true terminations.
             reset = term or self.lengths[i] == self.max_episode_steps
             next_observations.append(ob)
             rewards.append(rew)

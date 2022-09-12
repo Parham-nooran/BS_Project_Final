@@ -11,26 +11,26 @@ class Ant(MJCFWalkerBase):
     
     def __init__(self):
       
-        # load_terrain = bool(input('Load Terrain: '))
-        # if load_terrain:
-        #   terrain_source = input('Terrain Source: ')
-        #   terrain_source = terrain_source if terrain_source else 'csv'
-        #   terrain_id = input('Terrain ID: ')
-        #   terrain_id = terrain_id if terrain_id else 'mounts'
-        #   columns = input('Columns: ')
-        #   columns = int(columns) if columns else 256
-        #   rows = input('Rows: ')
-        #   rows = int(rows) if rows else 256
-        #   width = input('Width: ')
-        #   width = float(width) if width else 0.5
-        #   length = input('Length: ')
-        #   length = float(length) if length else 0.5
-        #   height = input('Height: ')
-        #   height = float(height) if height else 0.5
-        # else:
-        #   terrain_source, terrain_id, columns, rows, width, length, height = 'png', 'maze', 256, 256, 0.5, 0.5, 2
+        load_terrain = bool(input('Load Terrain: '))
+        if load_terrain:
+          terrain_source = input('Terrain Source: ')
+          terrain_source = terrain_source if terrain_source else 'random'
+          terrain_id = input('Terrain ID: ')
+          terrain_id = terrain_id if terrain_id else 'mounts'
+          columns = input('Columns: ')
+          columns = int(columns) if columns else 256
+          rows = input('Rows: ')
+          rows = int(rows) if rows else 256
+          width = input('Width: ')
+          width = float(width) if width else 0.5
+          length = input('Length: ')
+          length = float(length) if length else 0.5
+          height = input('Height: ')
+          height = float(height) if height else 1.4
+        else:
+          terrain_source, terrain_id, columns, rows, width, length, height = 'png', 'maze', 256, 256, 0.5, 0.5, 2
 
-        load_terrain, terrain_source, terrain_id, columns, rows, width, length, height = 0, 'csv', 'mounts', 256, 256, 0.5, 0.5, 0.5
+        # load_terrain, terrain_source, terrain_id, columns, rows, width, length, height = 0, 'csv', 'mounts', 256, 256, 0.5, 0.5, 0.5
         MJCFWalkerBase.__init__(self, 'ant.xml', "torso", action_dim=8, obs_dim=28, power=2.5, load_terrain=load_terrain,
                                  terrain_source=terrain_source, terrain_id=terrain_id, columns=columns, rows=rows, width=width, length=length, height=height)
 
@@ -76,7 +76,7 @@ class AntBulletEnv(WalkerBaseBulletEnv):
 
   def __init__(self, render=True):
     self.robot = Ant()
-    WalkerBaseBulletEnv.__init__(self, self.robot, render, training=False, random=True, goal_from_keyboard=False, max_goal_dist=60, min_dist=5, max_dist=15)
+    WalkerBaseBulletEnv.__init__(self, self.robot, render, training=False, random=False, goal_from_keyboard=True, max_goal_dist=60, min_dist=5, max_dist=15)
 
 
 class TrainingAntBulletEnv(WalkerBaseBulletEnv):

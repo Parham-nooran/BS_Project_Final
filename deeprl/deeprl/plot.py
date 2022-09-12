@@ -1,5 +1,3 @@
-'''Script used to plot results.'''
-
 import argparse
 import itertools
 import os
@@ -31,13 +29,11 @@ def smooth(vals, window):
 
 
 def stats(xs, means, stds):
-
     lengths = [len(x) for x in xs]
     min_length = min(lengths)
     xs = [x[:min_length] for x in xs]
     assert len(xs) == 1 or np.all(xs[1:] == xs[0]), xs
     x = xs[0]
-
     means = np.array([mean[:min_length] for mean in means])
     mean = means.mean(axis=0)
     min_mean = means.min(axis=0)
@@ -50,19 +46,15 @@ def stats(xs, means, stds):
         std = np.sqrt(var_within + var_between)
     else:
         std = None
-
     return x, mean, min_mean, max_mean, std
 
 
 def flip(items, columns):
-
     return itertools.chain(*[items[i::columns] for i in range(columns)])
 
 
-def get_data(paths, baselines, baselines_source, x_axis, y_axis, x_min, x_max, window):
-
+def get_data(paths, x_axis, y_axis, x_min, x_max, window):
     data = {}
-
     log_paths = []
     for path in paths:
         if os.path.isdir(path):
@@ -73,42 +65,23 @@ def get_data(paths, baselines, baselines_source, x_axis, y_axis, x_min, x_max, w
     for path in log_paths:
         sub_path, file = os.path.split(path)
         dfs = {}
-
-        if file == 'log.csv':
-            env, agent, seed = sub_path.split(os.sep)[-3:]
-
-            df_seed = pd.read_csv(path, sep=',', engine='python')
-            x = df_seed[x_axis].values
-            if not np.all(np.diff(x) > 0):
-                logger.warning(f'Skipping unsorted {env} {agent} {seed}')
-                continue
-            if x_min and x[-1] < x_min:
-                logger.warning(
-                    f'Skipping {env} {agent} {seed} ({x[-1]} steps)')
-                continue
-            dfs[seed] = df_seed
-
-        elif file == 'log.pkl':
-            env, agent = sub_path.split(os.sep)[-2:]
-
-            df = pd.read_pickle(path, compression='zip')
-            for seed, df_seed in df.groupby('seed'):
-                x = df_seed[x_axis].values
-                if not np.all(np.diff(x) > 0):
-                    logger.warning(f'Skipping unsorted {env} {agent} {seed}')
-                    continue
-                if x_min and x[-1] < x_min:
-                    logger.warning(f'Skipping {env} {agent} {seed} ({x[-1]} steps)')
-                    continue
-                dfs[seed] = df_seed
-
+        env, agent, seed = sub_path.split(os.sep)[-3:]
+        df_seed = pd.read_csv(path, sep=',', engine='python')
+        x = df_seed[x_axis].values
+        if not np.all(np.diff(x) > 0):
+            logger.warning(f'Skipping unsorted {env} {agent} {seed}')
+            continue
+        if x_min and x[-1] < x_min:
+            logger.warning(
+                f'Skipping {env} {agent} {seed} ({x[-1]} steps)')
+            continue
+        dfs[seed] = df_seed
         for seed, df in dfs.items():
             if env not in data:
                 data[env] = {}
             if agent not in data[env]:
                 data[env][agent] = {}
             assert seed not in data[env][agent]
-
             x = df[x_axis].values
             if y_axis in df:
                 mean = df[y_axis].values
@@ -124,7 +97,6 @@ def get_data(paths, baselines, baselines_source, x_axis, y_axis, x_min, x_max, w
                     std = None
             else:
                 raise KeyError(f'Key {y_axis} not found.')
-
             if x_max:
                 max_index = np.argmax(x > x_max) or len(x)
             else:
@@ -135,9 +107,7 @@ def get_data(paths, baselines, baselines_source, x_axis, y_axis, x_min, x_max, w
             if std is not None:
                 std = smooth(std, window)
                 std = std[:max_index]
-
             data[env][agent][seed] = x, mean, std
-
     for env, env_data in data.items():
         for agent, agent_data in env_data.items():
             xs, means, stds = [], [], []
@@ -150,105 +120,27 @@ def get_data(paths, baselines, baselines_source, x_axis, y_axis, x_min, x_max, w
             print(env, agent)
             env_data[agent] = dict(
                 seeds=(xs, means), stats=stats(xs, means, stds))
-
-    if baselines:
-        full_benchmark = len(paths) == 0
-        path = __file__
-        deeprl_path = os.path.split(os.path.split(path)[0])[0]
-
-        if baselines_source == 'tensorflow':
-            logger.log('Loading TensorFlow baselines...')
-            path = os.path.join(deeprl_path, 'data/logs/tensorflow_logs.pkl')
-            print('Path:', path)
-        else:
-            logger.log(f'Loading baselines from {baselines_source}...')
-            path = baselines_source
-
-        df = pd.read_pickle(path, compression='zip')
-
-        for env, df_env in df.groupby('environment'):
-            if full_benchmark:
-                data[env] = {}
-            elif env not in data:
-                continue
-            for agent, df_agent in df_env.groupby('agent'):
-                if baselines != ['all'] and agent not in baselines:
-                    continue
-
-                if agent in data[env]:
-                    logger.warning(f'Renaming baseline {agent}')
-                    agent = agent + ' (baseline)'
-
-                xs, means, stds = [], [], []
-                for seed, df_seed in df_agent.groupby('seed'):
-                    x = df_seed[x_axis].values
-                    if x_min and x[-1] < x_min:
-                        logger.warning(
-                            f'Skipping {env} {agent} {seed} ({x[-1]} steps)')
-                        continue
-                    if y_axis in df_seed:
-                        mean = df_seed[y_axis].values
-                        if (y_axis[-5:] == '/mean' and
-                                y_axis[:-5] + '/std' in df_seed):
-                            std = df_seed[y_axis[:-5] + '/std'].values
-                        else:
-                            std = None
-                    elif y_axis + '/mean' in df_seed:
-                        mean = df_seed[y_axis + '/mean'].values
-                        if y_axis + '/std' in df_seed:
-                            std = df_seed[y_axis + '/std'].values
-                        else:
-                            std = None
-                    else:
-                        raise KeyError(f'Key {y_axis} not found.')
-
-                    if x_max:
-                        max_index = np.argmax(x > x_max) or len(x)
-                    else:
-                        max_index = len(x)
-                    x = x[:max_index]
-                    mean = smooth(mean, window)
-                    mean = mean[:max_index]
-                    if std is not None:
-                        std = smooth(std, window)
-                        std = std[:max_index]
-
-                    xs.append(x)
-                    means.append(mean)
-                    stds.append(std)
-
-                if stds[0] is None:
-                    stds = None
-
-                print(env, agent)
-                data[env][agent] = dict(
-                    seeds=(xs, means), stats=stats(xs, means, stds))
-
     return data
 
 
-def plot(paths, x_axis, y_axis, x_label, y_label, window, interval, show_seeds,
-    columns, x_min, x_max, y_min, y_max, baselines, baselines_source, name,
-    save_formats, cmap, legend_columns, legend_marker_size, dpi, title, fig):
-
+def plot(paths, fig, x_axis='train/steps', y_axis='test/episode_score', x_label=None, y_label=None, window=1, interval='bounds', show_seeds=False,
+    columns=None, x_min=None, x_max=None, y_min=None, y_max=None, name=None,
+    cmap=None, legend_columns=None, legend_marker_size=None, dpi=150, title=None):
     logger.log('Loading data...')
     data = get_data(
-        paths, baselines, baselines_source, x_axis, y_axis, x_min, x_max,
+        paths, x_axis, y_axis, x_min, x_max,
         window)
-
     envs = sorted(data.keys(), key=str.casefold)
     num_envs = len(envs)
     if num_envs == 0:
         logger.error('No logs found.')
         return
-
     agents = set()
     for env in data:
         for agent in data[env]:
             agents.add(agent)
     agents = sorted(agents, key=str.casefold)
     num_agents = len(agents)
-
     if not cmap:
         if num_agents <= 10:
             cmap = 'tab10'
@@ -257,12 +149,10 @@ def plot(paths, x_axis, y_axis, x_label, y_label, window, interval, show_seeds,
         else:
             cmap = 'rainbow'
     cmap = plt.get_cmap(cmap)
-
     if isinstance(cmap, mpl.colors.ListedColormap):
         colors = cmap(range(num_agents))
     else:
         colors = list(cmap(np.linspace(0, 1, num_agents)))
-
     agent_colors = {a: c for a, c in zip(agents, colors)}
     if columns is None:
         columns = int(np.ceil(np.sqrt(num_envs)))
@@ -281,7 +171,6 @@ def plot(paths, x_axis, y_axis, x_label, y_label, window, interval, show_seeds,
     for i in range(num_envs):
         ax = fig.add_subplot(grid[i // columns, 1 + i % columns])
         axes.append(ax)
-
     logger.log('Plotting...')
     for env, ax in zip(envs, axes):
         if interval in ['std', 'bounds']:
@@ -298,18 +187,14 @@ def plot(paths, x_axis, y_axis, x_label, y_label, window, interval, show_seeds,
                 elif interval == 'bounds':
                     ax.fill_between(
                         x, min_mean, max_mean, color=color, alpha=0.1, lw=0)
-
         for agent in sorted(data[env], key=str.casefold):
             color = agent_colors[agent]
-
             xs, means = data[env][agent]['seeds']
             if show_seeds and len(xs) > 1:
                 for x, mean in zip(xs, means):
                     ax.plot(x, mean, c=color, lw=1, alpha=0.5)
-
             x, mean = data[env][agent]['stats'][:2]
             ax.plot(x, mean, c=color, lw=2, alpha=1)
-
         ax.set_ylim(ymin=y_min, ymax=y_max)
         ax.locator_params(axis='x', nbins=6)
         ax.locator_params(axis='y', tight=True, nbins=6)
@@ -333,13 +218,11 @@ def plot(paths, x_axis, y_axis, x_label, y_label, window, interval, show_seeds,
             ax.set_title(title)
         else:
             ax.set_title(env)
-
     legend_ax = fig.add_subplot(grid[-1:, :])
     legend_ax.set_axis_off()
     handles = []
     for color in colors:
-        marker = lines.Line2D(
-            range(1), range(1), marker='o', markerfacecolor=color,
+        marker = lines.Line2D(range(1), range(1), marker='o', markerfacecolor=color,
             markersize=legend_marker_size, linewidth=0, markeredgewidth=0)
         handles.append(marker)
 
@@ -363,77 +246,23 @@ def plot(paths, x_axis, y_axis, x_label, y_label, window, interval, show_seeds,
             [ch.get_extent(renderer)[0] for ch in h_packer.get_children()])
         if target_width > 1.3 * current_width:
             break
-
-    if save_formats:
-        logger.log('Saving...')
-        if name is None:
-            if len(envs) > 1:
-                name = 'results'
-            else:
-                name = envs[0]
-        for save_format in save_formats:
-            file_name = name + '.' + save_format
-            fig.savefig(file_name, facecolor=fig.get_facecolor(), dpi=dpi)
-            print(file_name)
-        print('to', os.getcwd())
-
     return fig
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--paths', nargs='+', default=[])
-    parser.add_argument('--x_axis', default='train/steps')
-    parser.add_argument('--y_axis', default='test/episode_score')
-    parser.add_argument('--x_label')
-    parser.add_argument('--y_label')
-    parser.add_argument('--interval', default='bounds')
-    parser.add_argument('--window', type=int, default=1)
-    parser.add_argument('--show_seeds', type=bool, default=False)
-    parser.add_argument('--columns', type=int)
-    parser.add_argument('--x_min', type=int)
-    parser.add_argument('--x_max', type=int)
-    parser.add_argument('--y_min', type=float)
-    parser.add_argument('--y_max', type=float)
-    parser.add_argument('--baselines', nargs='+')
-    parser.add_argument('--baselines_source', default='tensorflow')
-    parser.add_argument('--name')
-    parser.add_argument('--save_formats', nargs='*', default=['pdf', 'png'])
-    parser.add_argument('--seconds', type=int, default=0)
-    parser.add_argument('--cmap')
-    parser.add_argument('--legend_columns', type=int)
-    parser.add_argument('--font_size', type=int, default=12)
-    parser.add_argument('--font_family', default='serif')
-    parser.add_argument('--legend_font_size', type=int)
-    parser.add_argument('--legend_marker_size', type=int, default=10)
-    parser.add_argument('--backend', default=None)
-    parser.add_argument('--dpi', type=int, default=150)
-    parser.add_argument('--title')
     args = parser.parse_args()
-
     has_gui = True
-    if args.backend:
-        mpl.use(args.backend)
-        has_gui = args.backend.lower() != 'agg'
-    del args.backend
-
-    plt.rc('font', family=args.font_family, size=args.font_size)
-    if args.legend_font_size:
-        plt.rc('legend', fontsize=args.legend_font_size)
-    del args.font_family, args.font_size, args.legend_font_size
-
-    seconds = args.seconds
-    del args.seconds
-
+    plt.rc('font', family='serif', size=12)
+    seconds = 0
     start_time = time.time()
     fig = plot(**vars(args), fig=None)
-
     try:
         if seconds == 0:
             if has_gui:
                 while plt.get_fignums() != []:
                     plt.pause(0.1)
-
         else:
             while True:
                 if has_gui:
@@ -444,6 +273,5 @@ if __name__ == '__main__':
                     time.sleep(seconds)
                 start_time = time.time()
                 plot(**vars(args), fig=fig)
-
     except Exception:
         pass

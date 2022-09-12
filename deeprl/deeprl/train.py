@@ -5,8 +5,8 @@ import deeprl
 import yaml
 
 
-def train(header, agent, environment, test_environment, trainer, before_training, after_training,
-            parallel, sequential, seed, name, environment_name, checkpoint, path):
+def train(header, agent, environment, test_environment, trainer, parallel, sequential,
+             seed, name, environment_name, path, checkpoint='last'):
 
     args = dict(locals())
 
@@ -102,13 +102,8 @@ def train(header, agent, environment, test_environment, trainer, before_training
     trainer.initialize(agent=agent, environment=environment,
         test_environment=test_environment)
 
-    if before_training:
-        exec(before_training)
-
     trainer.run()
 
-    if after_training:
-        exec(after_training)
 
 
 if __name__ == '__main__':
@@ -118,14 +113,11 @@ if __name__ == '__main__':
     parser.add_argument('--environment', '--env')
     parser.add_argument('--test_environment', '--test_env')
     parser.add_argument('--trainer')
-    parser.add_argument('--before_training')
-    parser.add_argument('--after_training')
     parser.add_argument('--parallel', type=int, default=1)
     parser.add_argument('--sequential', type=int, default=1)
     parser.add_argument('--seed', type=int, default=0)
     parser.add_argument('--name')
     parser.add_argument('--environment_name')
-    parser.add_argument('--checkpoint', default='last')
     parser.add_argument('--path')
 
     args = vars(parser.parse_args())

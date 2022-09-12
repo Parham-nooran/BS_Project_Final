@@ -2,14 +2,18 @@ import os
 import yaml
 import deeprl  
 import argparse
+from matplotlib import animation
+import matplotlib.pyplot as plt
 
-
-def play_gym(agent, environment):
-
+def play_gym(agent, environment, save_as_gif):
+    frames = []
     environment = deeprl.environments.distribute(lambda: environment)
 
     observations = environment.start()
-    environment.render()
+    if save_as_gif:
+        frames.append(environment.render(mode="rgb_array")[0])
+    else:
+        environment.render()
 
     score = 0
     length = 0
@@ -20,11 +24,15 @@ def play_gym(agent, environment):
     steps = 0
     episodes = 0
     
+    # for i in range(100):
     while True:
         actions = agent.test_step(observations, steps)
         observations, infos = environment.step(actions)
         agent.test_update(**infos, steps=steps)
-        environment.render()
+        if save_as_gif:
+            frames.append(environment.render(mode="rgb_array")[0])
+        else:
+            environment.render()
 
         steps += 1
         reward = infos['rewards'][0]
@@ -52,12 +60,26 @@ def play_gym(agent, environment):
             length = 0
             min_reward = float('inf')
             max_reward = -float('inf')
+    
+    return frames
 
+def save_frames_as_gif(frames, path='deeprl/deeprl/', filename='gym_animation.gif'):
+    print(frames[0].shape)
+    plt.figure(figsize=(frames[0].shape[1]/20.0, frames[0].shape[0]/20.0), dpi=70)
 
-def play(path, checkpoint, seed, header, agent, environment):
+    patch = plt.imshow(frames[0])
+    plt.axis('off')
+
+    def animate(i):
+        patch.set_data(frames[i])
+
+    anim = animation.FuncAnimation(plt.gcf(), animate, frames = len(frames), interval=200)
+    anim.save(path + filename, writer='imagemagick', fps=100)
+
+def play(path, checkpoint, seed, header, agent, environment, save_as_gif=False):
 
     checkpoint_path = None
-
+    
     if path:
         deeprl.logger.log(f'Loading experiment from {path}')
 
@@ -126,10 +148,11 @@ def play(path, checkpoint, seed, header, agent, environment):
     else:
         environment_type = environment.__class__.__name__
 
-    if 'Bullet' in environment_type:
-        environment.render()
+    environment.render()
 
-    play_gym(agent, environment)
+    frames = play_gym(agent, environment, save_as_gif=save_as_gif)
+    if save_as_gif:
+        save_frames_as_gif(frames)
 
 
 if __name__ == '__main__':
