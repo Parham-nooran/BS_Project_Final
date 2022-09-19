@@ -10,8 +10,7 @@ FLOAT_EPSILON = 1e-8
 # A2C
 class StochasticPolicyGradient:
     def __init__(self, optimizer=None, entropy_coeff=0, gradient_clip=0):
-        self.optimizer = optimizer or \
-            tf.keras.optimizers.Adam(lr=3e-4, epsilon=1e-8)
+        self.optimizer = optimizer or tf.keras.optimizers.Adam(lr=3e-4, epsilon=1e-8)
         self.entropy_coeff = entropy_coeff
         self.gradient_clip = gradient_clip
 
@@ -49,12 +48,9 @@ class StochasticPolicyGradient:
 
 # PPO
 class ClippedRatio:
-    def __init__(
-        self, optimizer=None, ratio_clip=0.2, kl_threshold=0.015,
-        entropy_coeff=0, gradient_clip=0
-    ):
-        self.optimizer = optimizer or \
-            tf.keras.optimizers.Adam(lr=3e-4, epsilon=1e-8)
+    def __init__(self, optimizer=None, ratio_clip=0.2, kl_threshold=0.015, entropy_coeff=0, gradient_clip=0):
+
+        self.optimizer = optimizer or tf.keras.optimizers.Adam(lr=3e-4, epsilon=1e-8)
         self.ratio_clip = ratio_clip
         self.kl_threshold = kl_threshold
         self.entropy_coeff = entropy_coeff
@@ -71,7 +67,6 @@ class ClippedRatio:
             distributions = self.model.actor(observations)
             entropy = tf.reduce_mean(distributions.entropy())
             std = tf.reduce_mean(distributions.stddev())
-
         else:
             with tf.GradientTape() as tape:
                 distributions = self.model.actor(observations)
@@ -94,8 +89,7 @@ class ClippedRatio:
             self.optimizer.apply_gradients(zip(gradients, self.variables))
 
             kl = tf.reduce_mean(log_probs - new_log_probs)
-            clipped = tf.logical_or(
-                ratios_1 > ratio_high, ratios_1 < ratio_low)
+            clipped = tf.logical_or(ratios_1 > ratio_high, ratios_1 < ratio_low)
             clip_fraction = tf.reduce_mean(tf.cast(clipped, tf.float32))
             std = tf.reduce_mean(distributions.stddev())
 
@@ -179,19 +173,15 @@ class MaximumAPosterioriPolicyOptimization:
         self.actor_variables = model.actor.trainable_variables
 
         self.dual_variables = []
-        self.log_temperature = tf.Variable(
-            [self.initial_log_temperature], dtype=tf.float32)
+        self.log_temperature = tf.Variable([self.initial_log_temperature], dtype=tf.float32)
         self.dual_variables.append(self.log_temperature)
         shape = [action_space.shape[0]] if self.per_dim_constraining else [1]
-        self.log_alpha_mean = tf.Variable(
-            tf.fill(shape, self.initial_log_alpha_mean), dtype=tf.float32)
+        self.log_alpha_mean = tf.Variable(tf.fill(shape, self.initial_log_alpha_mean), dtype=tf.float32)
         self.dual_variables.append(self.log_alpha_mean)
-        self.log_alpha_std = tf.Variable(
-            tf.fill(shape, self.initial_log_alpha_std), dtype=tf.float32)
+        self.log_alpha_std = tf.Variable(tf.fill(shape, self.initial_log_alpha_std), dtype=tf.float32)
         self.dual_variables.append(self.log_alpha_std)
         if self.action_penalization:
-            self.log_penalty_temperature = tf.Variable(
-                [self.initial_log_temperature], dtype=tf.float32)
+            self.log_penalty_temperature = tf.Variable([self.initial_log_temperature], dtype=tf.float32)
             self.dual_variables.append(self.log_penalty_temperature)
 
     @tf.function
@@ -199,8 +189,7 @@ class MaximumAPosterioriPolicyOptimization:
         def parametric_kl_and_dual_losses(kl, alpha, epsilon):
             kl_mean = tf.reduce_mean(kl, axis=0)
             kl_loss = tf.reduce_sum(tf.stop_gradient(alpha) * kl_mean)
-            alpha_loss = tf.reduce_sum(
-                alpha * (epsilon - tf.stop_gradient(kl_mean)))
+            alpha_loss = tf.reduce_sum(alpha * (epsilon - tf.stop_gradient(kl_mean)))
             return kl_loss, alpha_loss
 
         def weights_and_temperature_loss(q_values, epsilon, temperature):
@@ -221,15 +210,11 @@ class MaximumAPosterioriPolicyOptimization:
             return tfp.distributions.Independent(tfp.distributions.Normal(
                 distribution_1.mean(), distribution_2.stddev()))
 
-        self.log_temperature.assign(
-            tf.maximum(self.min_log_dual, self.log_temperature))
-        self.log_alpha_mean.assign(
-            tf.maximum(self.min_log_dual, self.log_alpha_mean))
-        self.log_alpha_std.assign(
-            tf.maximum(self.min_log_dual, self.log_alpha_std))
+        self.log_temperature.assign(tf.maximum(self.min_log_dual, self.log_temperature))
+        self.log_alpha_mean.assign(tf.maximum(self.min_log_dual, self.log_alpha_mean))
+        self.log_alpha_std.assign(tf.maximum(self.min_log_dual, self.log_alpha_std))
         if self.action_penalization:
-            self.log_penalty_temperature.assign(tf.maximum(
-                self.min_log_dual, self.log_penalty_temperature))
+            self.log_penalty_temperature.assign(tf.maximum(self.min_log_dual, self.log_penalty_temperature))
 
         target_distributions = self.model.target_actor(observations)
         actions = target_distributions.sample(self.num_samples)
@@ -285,15 +270,11 @@ class MaximumAPosterioriPolicyOptimization:
                 kl_std = target_distributions.distribution.kl_divergence(
                     fixed_mean_distribution.distribution)
             else:
-                kl_mean = target_distributions.kl_divergence(
-                    fixed_std_distribution)
-                kl_std = target_distributions.kl_divergence(
-                    fixed_mean_distribution)
+                kl_mean = target_distributions.kl_divergence(fixed_std_distribution)
+                kl_std = target_distributions.kl_divergence(fixed_mean_distribution)
 
-            kl_mean_loss, alpha_mean_loss = parametric_kl_and_dual_losses(
-                kl_mean, alpha_mean, self.epsilon_mean)
-            kl_std_loss, alpha_std_loss = parametric_kl_and_dual_losses(
-                kl_std, alpha_std, self.epsilon_std)
+            kl_mean_loss, alpha_mean_loss = parametric_kl_and_dual_losses(kl_mean, alpha_mean, self.epsilon_mean)
+            kl_std_loss, alpha_std_loss = parametric_kl_and_dual_losses(kl_std, alpha_std, self.epsilon_std)
 
             policy_loss = policy_mean_loss + policy_std_loss
             kl_loss = kl_mean_loss + kl_std_loss

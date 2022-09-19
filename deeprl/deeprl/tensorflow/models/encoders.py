@@ -1,6 +1,6 @@
 import tensorflow as tf
 
-
+# A2C, PPO, TRPO
 class ObservationEncoder(tf.keras.Model):
     def initialize(self, observation_normalizer=None):
         self.observation_normalizer = observation_normalizer
@@ -10,7 +10,7 @@ class ObservationEncoder(tf.keras.Model):
             observations = self.observation_normalizer(observations)
         return observations
 
-
+# MPO
 class ObservationActionEncoder(tf.keras.Model):
     def initialize(self, observation_normalizer=None):
         self.observation_normalizer = observation_normalizer

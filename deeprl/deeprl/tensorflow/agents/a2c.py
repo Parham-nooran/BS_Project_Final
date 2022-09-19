@@ -5,10 +5,13 @@ from deeprl.tensorflow import agents, models, normalizers, updaters
 
 
 def default_model(layers):
-    return models.ActorCritic(actor=models.Actor(encoder=models.ObservationEncoder(),
+    return models.ActorCritic(
+            actor=models.Actor(
+            encoder=models.ObservationEncoder(),
             torso=models.MLP(layers, 'tanh'),
             head=models.DetachedScaleGaussianPolicyHead()),
-        critic=models.Critic(encoder=models.ObservationEncoder(),
+        critic=models.Critic(
+            encoder=models.ObservationEncoder(),
             torso=models.MLP(layers, 'tanh'),
             head=models.ValueHead()), observation_normalizer=normalizers.MeanStd())
 

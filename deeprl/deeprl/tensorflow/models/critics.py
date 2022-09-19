@@ -2,7 +2,7 @@ import tensorflow as tf
 
 from deeprl.tensorflow import models
 
-# A2C, DDPG, SAC
+# A2C, DDPG, SAC, MPO, PPO, TRPO
 class ValueHead(tf.keras.Model):
     def __init__(self, dense_kwargs=None):
         super().__init__()
@@ -28,10 +28,8 @@ class Critic(tf.keras.Model):
         self.torso = torso
         self.head = head
 
-    def initialize(
-        self, observation_space, action_space, observation_normalizer=None,
-        return_normalizer=None
-    ):
+    def initialize(self, observation_space, action_space, observation_normalizer=None,
+        return_normalizer=None):
         self.encoder.initialize(observation_normalizer)
         self.head.initialize(return_normalizer)
 

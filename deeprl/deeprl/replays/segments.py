@@ -2,7 +2,6 @@ import numpy as np
 
 from deeprl import replays
 
-
 class Segment:
 
     def __init__(
@@ -47,9 +46,7 @@ class Segment:
         return {k: replays.flatten_batch(self.buffers[k]) for k in keys}
 
     def get(self, *keys):
-
         batch = self.get_full(*keys)
-
         if self.batch_size is None:
             for _ in range(self.batch_iterations):
                 yield batch

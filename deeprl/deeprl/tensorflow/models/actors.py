@@ -6,7 +6,7 @@ from deeprl.tensorflow import models
 
 FLOAT_EPSILON = 1e-8
 
-# A2C
+# A2C, TRPO, PPO
 class DetachedScaleGaussianPolicyHead(tf.keras.Model): 
     def __init__(self, loc_activation='tanh', dense_loc_kwargs=None, log_scale_init=0.,
         scale_min=1e-4, scale_max=1., distribution=tfp.distributions.MultivariateNormalDiag):
@@ -35,7 +35,7 @@ class DetachedScaleGaussianPolicyHead(tf.keras.Model):
         scale = tf.tile(scale, (batch_size, 1))
         return self.distribution(loc, scale)
 
-# PPO
+# MPO
 class GaussianPolicyHead(tf.keras.Model):
     def __init__(
         self, loc_activation='tanh', dense_loc_kwargs=None,
@@ -45,22 +45,18 @@ class GaussianPolicyHead(tf.keras.Model):
     ):
         super().__init__()
         self.loc_activation = loc_activation
-        if dense_loc_kwargs is None:
-            dense_loc_kwargs = models.default_dense_kwargs()
+        if dense_loc_kwargs is None: dense_loc_kwargs = models.default_dense_kwargs()
         self.dense_loc_kwargs = dense_loc_kwargs
         self.scale_activation = scale_activation
         self.scale_min = scale_min
         self.scale_max = scale_max
-        if dense_scale_kwargs is None:
-            dense_scale_kwargs = models.default_dense_kwargs()
+        if dense_scale_kwargs is None: dense_scale_kwargs = models.default_dense_kwargs()
         self.dense_scale_kwargs = dense_scale_kwargs
         self.distribution = distribution
 
     def initialize(self, action_size):
-        self.loc_layer = tf.keras.layers.Dense(
-            action_size, self.loc_activation, **self.dense_loc_kwargs)
-        self.scale_layer = tf.keras.layers.Dense(
-            action_size, self.scale_activation, **self.dense_scale_kwargs)
+        self.loc_layer = tf.keras.layers.Dense(action_size, self.loc_activation, **self.dense_loc_kwargs)
+        self.scale_layer = tf.keras.layers.Dense(action_size, self.scale_activation, **self.dense_scale_kwargs)
 
     def call(self, inputs):
         loc = self.loc_layer(inputs)

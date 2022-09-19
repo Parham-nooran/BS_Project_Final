@@ -59,17 +59,12 @@ class Buffer:
         for i in range(min(self.size, self.return_steps - 1)):
             index = (self.index - i - 1) % self.max_size
             masks *= (1 - self.buffers['resets'][index])
-            new_rewards = (self.buffers['rewards'][index] +
-                           self.buffers['discounts'][index] * rewards)
-            self.buffers['rewards'][index] = (
-                (1 - masks) * self.buffers['rewards'][index] +
-                masks * new_rewards)
+            new_rewards = (self.buffers['rewards'][index] + self.buffers['discounts'][index] * rewards)
+            self.buffers['rewards'][index] = ((1 - masks) * self.buffers['rewards'][index] + masks * new_rewards)
             new_discounts = self.buffers['discounts'][index] * discounts
-            self.buffers['discounts'][index] = (
-                (1 - masks) * self.buffers['discounts'][index] +
+            self.buffers['discounts'][index] = ((1 - masks) * self.buffers['discounts'][index] +
                 masks * new_discounts)
-            self.buffers['next_observations'][index] = (
-                (1 - masks)[:, None] *
+            self.buffers['next_observations'][index] = ((1 - masks)[:, None] *
                 self.buffers['next_observations'][index] +
                 masks[:, None] * next_observations)
 
