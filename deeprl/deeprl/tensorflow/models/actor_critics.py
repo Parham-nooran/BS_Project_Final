@@ -4,10 +4,8 @@ import tensorflow as tf
 
 
 class ActorCritic(tf.keras.Model):
-    def __init__(
-        self, actor, critic, observation_normalizer=None,
-        return_normalizer=None
-    ):
+    def __init__(self, actor, critic, observation_normalizer=None,
+        return_normalizer=None):
         super().__init__()
         self.actor = actor
         self.critic = critic
@@ -40,15 +38,12 @@ class ActorCriticWithTargets(tf.keras.Model):
     def initialize(self, observation_space, action_space):
         if self.observation_normalizer:
             self.observation_normalizer.initialize(observation_space.shape)
-        self.actor.initialize(
-            observation_space, action_space, self.observation_normalizer)
-        self.critic.initialize(
-            observation_space, action_space, self.observation_normalizer,
+
+        self.actor.initialize(observation_space, action_space, self.observation_normalizer)
+        self.critic.initialize(observation_space, action_space, self.observation_normalizer,
             self.return_normalizer)
-        self.target_actor.initialize(
-            observation_space, action_space, self.observation_normalizer)
-        self.target_critic.initialize(
-            observation_space, action_space, self.observation_normalizer,
+        self.target_actor.initialize(observation_space, action_space, self.observation_normalizer)
+        self.target_critic.initialize(observation_space, action_space, self.observation_normalizer,
             self.return_normalizer)
         dummy_observations = tf.zeros((1,) + observation_space.shape)
         dummy_actions = tf.zeros((1,) + action_space.shape)
@@ -58,12 +53,8 @@ class ActorCriticWithTargets(tf.keras.Model):
         self.target_actor(dummy_observations)
         self.target_critic(dummy_observations, dummy_actions)
         
-        self.online_variables = (
-            self.actor.trainable_variables +
-            self.critic.trainable_variables)
-        self.target_variables = (
-            self.target_actor.trainable_variables +
-            self.target_critic.trainable_variables)
+        self.online_variables = (self.actor.trainable_variables + self.critic.trainable_variables)
+        self.target_variables = (self.target_actor.trainable_variables + self.target_critic.trainable_variables)
         self.assign_targets()
 
     def assign_targets(self):

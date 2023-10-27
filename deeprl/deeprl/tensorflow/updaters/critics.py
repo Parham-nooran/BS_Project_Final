@@ -6,8 +6,7 @@ from deeprl.tensorflow import updaters
 class VRegression:
     def __init__(self, loss=None, optimizer=None, gradient_clip=0):
         self.loss = loss or tf.keras.losses.MeanSquaredError()
-        self.optimizer = optimizer or \
-            tf.keras.optimizers.Adam(lr=1e-3, epsilon=1e-8)
+        self.optimizer = optimizer or tf.keras.optimizers.Adam(lr=1e-3, epsilon=1e-8)
         self.gradient_clip = gradient_clip
 
     def initialize(self, model):

@@ -1,6 +1,5 @@
 from .actor_critics import ActorCritic
 from .actor_critics import ActorCriticWithTargets
-from .actor_critics import ActorTwinCriticWithTargets
 
 from .actors import Actor
 from .actors import DetachedScaleGaussianPolicyHead
@@ -16,4 +15,4 @@ from .utils import default_dense_kwargs, MLP
 __all__ = [
     default_dense_kwargs, MLP, ObservationActionEncoder,
     ObservationEncoder, DetachedScaleGaussianPolicyHead, GaussianPolicyHead,
-    Actor, Critic, ValueHead, ActorCritic, ActorCriticWithTargets, ActorTwinCriticWithTargets]
+    Actor, Critic, ValueHead, ActorCritic, ActorCriticWithTargets]

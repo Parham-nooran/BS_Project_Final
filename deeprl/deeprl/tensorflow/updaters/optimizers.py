@@ -96,10 +96,8 @@ class ConjugateGradient:
             return constraint, loss
 
         for i in range(self.backtrack_steps):
-            step = tf.convert_to_tensor(
-                self.backtrack_coefficient ** i, tf.float32)
-            constraint, loss = _update(
-                alpha, conjugate_gradient, step, start_variables)
+            step = tf.convert_to_tensor(self.backtrack_coefficient ** i, tf.float32)
+            constraint, loss = _update(alpha, conjugate_gradient, step, start_variables)
 
             if constraint <= self.constraint_threshold and loss <= start_loss:
                 break

@@ -14,7 +14,7 @@ class Ant(MJCFWalkerBase):
         load_terrain = bool(input('Load Terrain: '))
         if load_terrain:
           terrain_source = input('Terrain Source: ')
-          terrain_source = terrain_source if terrain_source else 'random'
+          terrain_source = terrain_source if terrain_source else 'png'
           terrain_id = input('Terrain ID: ')
           terrain_id = terrain_id if terrain_id else 'mounts'
           columns = input('Columns: ')
@@ -28,7 +28,7 @@ class Ant(MJCFWalkerBase):
           height = input('Height: ')
           height = float(height) if height else 1.4
         else:
-          terrain_source, terrain_id, columns, rows, width, length, height = 'png', 'maze', 256, 256, 0.5, 0.5, 2
+          terrain_source, terrain_id, columns, rows, width, length, height = 'png', 'maze', 256,  256, 0.5, 0.5, 2
 
         # load_terrain, terrain_source, terrain_id, columns, rows, width, length, height = 0, 'csv', 'mounts', 256, 256, 0.5, 0.5, 0.5
         MJCFWalkerBase.__init__(self, 'ant.xml', "torso", action_dim=8, obs_dim=28, power=2.5, load_terrain=load_terrain,

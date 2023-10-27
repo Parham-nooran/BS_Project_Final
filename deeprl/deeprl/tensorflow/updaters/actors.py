@@ -93,8 +93,7 @@ class ClippedRatio:
             clip_fraction = tf.reduce_mean(tf.cast(clipped, tf.float32))
             std = tf.reduce_mean(distributions.stddev())
 
-        return dict(
-            loss=loss, kl=kl, entropy=entropy, clip_fraction=clip_fraction,
+        return dict(loss=loss, kl=kl, entropy=entropy, clip_fraction=clip_fraction,
             std=std, stop=kl > self.kl_threshold)
 
 # TRPO
