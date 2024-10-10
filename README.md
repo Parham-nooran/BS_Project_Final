@@ -2,7 +2,7 @@ Implementation and Comparison of Some of the New, Most Famous Reinforcement Lear
 
 MPO. Keyboard controlled goals:
 
-<p align=center>
+<p align="center">
 
   ![MPO_Keyboard](https://github.com/user-attachments/assets/38ec4c02-2067-4618-be46-a58a63f94edc)
 
